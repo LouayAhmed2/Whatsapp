@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     protected EditText mcode;
     protected Button mverifyBtn;
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallback;
+    String mVarificationId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +40,11 @@ public class MainActivity extends AppCompatActivity {
         mverifyBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                StartphoneNumberVerification();
+                if (mVarificationId != null) {
+                    VerfiyPhonenumber();
+                } else {
+                    StartphoneNumberVerification();
+                }
             }
         });
         mCallback = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
@@ -51,9 +56,22 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onVerificationFailed(FirebaseException e) {
+            }
 
+            @Override
+            public void onCodeSent(String VarificationId, PhoneAuthProvider.ForceResendingToken forceResendingToken) {
+                super.onCodeSent(VarificationId, forceResendingToken);
+                mVarificationId = VarificationId;
+
+                mverifyBtn.setText("Verfiy Code");
             }
         };
+    }
+
+    private void VerfiyPhonenumber() {
+        PhoneAuthCredential credential = PhoneAuthProvider.getCredential(mVarificationId, mcode.getText().toString());
+        signInwhithAuthCredential(credential);
+
     }
 
     private void signInwhithAuthCredential(PhoneAuthCredential phoneAuthCredential) {
