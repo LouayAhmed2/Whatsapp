@@ -23,87 +23,94 @@ import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
-    protected EditText mphoneNumber;
-    protected EditText mcode;
-    protected Button mverifyBtn;
-    private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallback;
-    String mVarificationId;
+    String mVerificationId;
+    private EditText mPhoneNumber, mCode;
+    private Button mSend;
+    private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallbacks;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        super.setContentView(R.layout.activity_main);
-        FirebaseApp.initializeApp(this);
-        userLogged();
+        setContentView(R.layout.activity_main);
 
-        initView();
-        mverifyBtn.setOnClickListener(new View.OnClickListener() {
+        FirebaseApp.initializeApp(this);
+
+        userIsLoggedIn();
+
+        mPhoneNumber = findViewById(R.id.phoneNumber);
+        mCode = findViewById(R.id.code);
+
+        mSend = findViewById(R.id.verify_btn);
+
+        mSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mVarificationId != null) {
-                    VerfiyPhonenumber();
-                } else {
-                    StartphoneNumberVerification();
-                }
+                if (mVerificationId != null)
+                    verifyPhoneNumberWithCode();
+                else
+                    startPhoneNumberVerification();
             }
         });
-        mCallback = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+
+
+        mCallbacks = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             @Override
             public void onVerificationCompleted(PhoneAuthCredential phoneAuthCredential) {
-
-                signInwhithAuthCredential(phoneAuthCredential);
+                signInWithPhoneAuthCredential(phoneAuthCredential);
             }
 
             @Override
             public void onVerificationFailed(FirebaseException e) {
             }
 
-            @Override
-            public void onCodeSent(String VarificationId, PhoneAuthProvider.ForceResendingToken forceResendingToken) {
-                super.onCodeSent(VarificationId, forceResendingToken);
-                mVarificationId = VarificationId;
 
-                mverifyBtn.setText("Verfiy Code");
+            @Override
+            public void onCodeSent(String verificationId, PhoneAuthProvider.ForceResendingToken forceResendingToken) {
+                super.onCodeSent(verificationId, forceResendingToken);
+
+                mVerificationId = verificationId;
+                mSend.setText("Verify Code");
             }
         };
-    }
-
-    private void VerfiyPhonenumber() {
-        PhoneAuthCredential credential = PhoneAuthProvider.getCredential(mVarificationId, mcode.getText().toString());
-        signInwhithAuthCredential(credential);
 
     }
 
-    private void signInwhithAuthCredential(PhoneAuthCredential phoneAuthCredential) {
+    private void verifyPhoneNumberWithCode() {
+        PhoneAuthCredential credential = PhoneAuthProvider.getCredential(mVerificationId, mCode.getText().toString());
+        signInWithPhoneAuthCredential(credential);
+    }
+
+    private void signInWithPhoneAuthCredential(PhoneAuthCredential phoneAuthCredential) {
         FirebaseAuth.getInstance().signInWithCredential(phoneAuthCredential).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful()) {
-                    userLogged();
+
+                    final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+
+
                 }
+
             }
         });
     }
 
-    private void userLogged() {
-        FirebaseUser User = FirebaseAuth.getInstance().getCurrentUser();
-        if (User != null) {
-            startActivity(new Intent(MainActivity.this
-                    , HomeScreen.class));
+    private void userIsLoggedIn() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            startActivity(new Intent(getApplicationContext(), HomeScreen.class));
             finish();
+            return;
         }
-        return;
     }
 
-    private void StartphoneNumberVerification() {
+    private void startPhoneNumberVerification() {
         PhoneAuthProvider.getInstance().verifyPhoneNumber(
-                mphoneNumber.getText().toString(), 60, TimeUnit.SECONDS, this, mCallback);
-    }
-
-
-    private void initView() {
-        mphoneNumber = (EditText) findViewById(R.id.phoneNumber);
-        mcode = (EditText) findViewById(R.id.code);
-        mverifyBtn = (Button) findViewById(R.id.verify_btn);
+                mPhoneNumber.getText().toString(),
+                60,
+                TimeUnit.SECONDS,
+                this,
+                mCallbacks);
     }
 }
